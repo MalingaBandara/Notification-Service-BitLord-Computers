@@ -1,47 +1,59 @@
+# Port this notification service runs on
 server:
   port: 8083
 
 spring:
   application:
-    name: notification-service
+    name: notification-service # Service name registered in Eureka service registry
+
   kafka:
-    bootstrap-servers: localhost:9093
+    bootstrap-servers: localhost:9093 # Kafka broker address to connect to
+
     consumer:
-      group-id: notification-group
+      group-id: notification-group # Consumer group ID — all instances of this service share this group
+      # ErrorHandlingDeserializer wraps the actual deserializer to gracefully handle deserialization errors
       key-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
       properties:
+        # Actual deserializer used for message keys (plain string)
         spring.deserializer.key.delegate.class: org.apache.kafka.common.serialization.StringDeserializer
+        # Actual deserializer used for message values (JSON to Java object)
         spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
+        # Trust all packages during JSON deserialization — allows mapping to any DTO class
         spring.json.trusted.packages: "*"
+
   mail:
-    host: "sandbox.smtp.mailtrap.io"
-    port: 587
-    username: "76e1fe1efe0f12"
-    password: "6525695c05ba32"
+    host: "sandbox.smtp.mailtrap.io" # Mailtrap SMTP host — used for email testing in dev/sandbox environment
+    port: 587                         # SMTP port for TLS-based email sending
+    username: "76e1fe1efe0f12"        # Mailtrap SMTP username for authentication
+    password: "6525695c05ba32"        # Mailtrap SMTP password for authentication
     properties:
-      mail.smtp.auth: true
-      mail.smtp.starttls.enable: true
+      mail.smtp.auth: true            # Enable SMTP authentication
+      mail.smtp.starttls.enable: true # Enable STARTTLS to upgrade connection to encrypted TLS
 
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: http://localhost:8761/eureka/ # Eureka server URL where this service registers itself
   instance:
-    prefer-ip-address: true
+    prefer-ip-address: true # Register with IP address instead of hostname for reliable inter-service communication
 
 management:
   tracing:
     sampling:
-      probability: 1.0
+      probability: 1.0 # Trace 100% of requests — captures every request for full observability
+
   zipkin:
     tracing:
-      endpoint: http://localhost:9412/api/v2/spans
+      endpoint: http://localhost:9412/api/v2/spans # Zipkin server endpoint where trace data is sent
+
   endpoints:
     web:
       exposure:
+        # Expose these actuator endpoints over HTTP for monitoring and health checks
         include: health, info, prometheus, metrics
+
   metrics:
     export:
       prometheus:
-        enabled: true
+        enabled: true # Enable Prometheus metrics export — allows Prometheus to scrape this service
